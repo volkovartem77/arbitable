@@ -1,0 +1,12 @@
+{
+  "exchanges": {
+    "itbit": [
+      "XBT_USD",
+      "ETH_USD"
+    ],
+    "bxin": [
+      "THB_BTC",
+      "THB_ETH"
+    ]
+  }
+}
