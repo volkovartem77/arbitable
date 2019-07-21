@@ -28,3 +28,5 @@ f.close()
 
 command = f'''sed -i "s%os.path.abspath(os.curdir) + '/'%'{PROJECT_PATH}'%g" "config.py"'''
 subprocess.call([command], shell=True)
+
+print('Done')

@@ -6,6 +6,7 @@ import time
 from simple_websocket_server import WebSocketServer, WebSocket
 
 from config import DATABASE, BANK_RATE
+from utils import log
 
 ths = {}
 
@@ -23,9 +24,9 @@ def get_data():
             "exchange": "ITBIT",
             "symbol": "XBT_USD",
             "bid": str(bidask1['bid']),
-            "bid_amount": str(bidask1['bid_amount']),
+            "bid_amount": '{0:.8f}'.format(bidask1['bid_amount']),
             "ask": str(bidask1['ask']),
-            "ask_amount": str(bidask1['ask_amount']),
+            "ask_amount": '{0:.8f}'.format(bidask1['ask_amount']),
             "bank_rate": str(bank_rate),
             "diff": str(round(bidask3['bid'] / bank_rate / bidask1['ask'] * 100 - 100, 2))
         },
@@ -150,5 +151,6 @@ class SimpleEcho(WebSocket):
         ths[self.address[1]] = False
 
 
+log('websocket start')
 server = WebSocketServer('', 9999, SimpleEcho)
 server.serve_forever()

@@ -23,5 +23,10 @@ DATABASE = redis.StrictRedis(host='localhost', port=6379, decode_responses=True)
 
 
 # Constants
-TIMEOUT_PUSH = 1
+TIMEOUT_PUSH = 2
 BANK_RATE = 'BANK_RATE'
+
+
+# Logging
+LOG_PATH = PROJECT_PATH + 'general.log'
+ERR_LOG_PATH = PROJECT_PATH + 'errors.log'

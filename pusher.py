@@ -4,8 +4,10 @@ import time
 import traceback
 
 import requests
+from requests.exceptions import ConnectionError
 
 from config import DATABASE, TIMEOUT_PUSH, EXCHANGES, BANK_RATE
+from utils import err_log, log
 
 
 def convert_symbol(symbol):
@@ -17,47 +19,63 @@ def convert_symbol(symbol):
 
 def push_bank_rate():
     while True:
-        r = requests.get('https://www.krungsri.com/bank/en/Other/ExchangeRate/Todayrates.html')
-        if r is not None:
-            bank_rate = r.text.split("</td></tr><tr style='background-color:transparent !important'>")[0].split('>')[-1]
-            DATABASE.set(BANK_RATE, bank_rate)
-            # print(bank_rate)
-        time.sleep(TIMEOUT_PUSH)
+        try:
+            r = requests.get('https://www.krungsri.com/bank/en/Other/ExchangeRate/Todayrates.html')
+            if r is not None:
+                bank_rate = \
+                    r.text.split("</td></tr><tr style='background-color:transparent !important'>")[0].split('>')[-1]
+                DATABASE.set(BANK_RATE, bank_rate)
+                # print(bank_rate)
+            time.sleep(TIMEOUT_PUSH)
+        except ConnectionError:
+            log('Too many requests', 'BankRate')
+            err_log(traceback.format_exc())
+            time.sleep(4)
 
 
 def push_bxin_tick(symbol):
     while True:
-        r = requests.get(f"https://bx.in.th/api/orderbook/?pairing={convert_symbol(symbol)}")
-        if r is not None:
-            r = json.loads(r.text)
-            bid = round(float(r['bids'][0][0]), 2)
-            ask = round(float(r['asks'][0][0]), 2)
-            bid_amount = float(r['bids'][0][1])
-            ask_amount = float(r['asks'][0][1])
-            # print(symbol, '  ', bid, bid_amount, '    ', ask, ask_amount)
-            DATABASE.set('bxin_' + symbol, json.dumps({
-                'ask': ask,
-                'bid': bid,
-                'ask_amount': ask_amount,
-                'bid_amount': bid_amount
-            }))
-            # print(DATABASE.get('bxin_' + symbol))
-        time.sleep(TIMEOUT_PUSH)
+        try:
+            r = requests.get(f"https://bx.in.th/api/orderbook/?pairing={convert_symbol(symbol)}")
+            if r is not None:
+                r = json.loads(r.text)
+                bid = round(float(r['bids'][0][0]), 2)
+                ask = round(float(r['asks'][0][0]), 2)
+                bid_amount = float(r['bids'][0][1])
+                ask_amount = float(r['asks'][0][1])
+                # print(symbol, '  ', bid, bid_amount, '    ', ask, ask_amount)
+                DATABASE.set('bxin_' + symbol, json.dumps({
+                    'ask': ask,
+                    'bid': bid,
+                    'ask_amount': ask_amount,
+                    'bid_amount': bid_amount
+                }))
+                # print(DATABASE.get('bxin_' + symbol))
+            time.sleep(TIMEOUT_PUSH)
+        except ConnectionError:
+            log('Too many requests', 'BXIN')
+            err_log(traceback.format_exc())
+            time.sleep(4)
 
 
 def push_itbit_tick(symbol):
     while True:
-        r = requests.get(f"https://api.itbit.com/v1/markets/{symbol.replace('_', '')}/ticker")
-        if r is not None:
-            r = json.loads(r.text)
-            DATABASE.set('itbit_' + symbol, json.dumps({
-                'ask': float(r['ask']),
-                'bid': float(r['bid']),
-                'ask_amount': float(r['askAmt']),
-                'bid_amount': float(r['bidAmt'])
-            }))
-            # print(DATABASE.get('itbit_' + symbol))
-        time.sleep(TIMEOUT_PUSH)
+        try:
+            r = requests.get(f"https://api.itbit.com/v1/markets/{symbol.replace('_', '')}/ticker")
+            if r is not None:
+                r = json.loads(r.text)
+                DATABASE.set('itbit_' + symbol, json.dumps({
+                    'ask': float(r['ask']),
+                    'bid': float(r['bid']),
+                    'ask_amount': float(r['askAmt']),
+                    'bid_amount': float(r['bidAmt'])
+                }))
+                # print(DATABASE.get('itbit_' + symbol))
+            time.sleep(TIMEOUT_PUSH)
+        except ConnectionError:
+            log('Too many requests', 'ITBIT')
+            err_log(traceback.format_exc())
+            time.sleep(4)
 
 
 def launch():
@@ -69,7 +87,7 @@ def launch():
         th_bxin.start()
     th_bank_rate = threading.Thread(target=push_bank_rate)
     th_bank_rate.start()
-    print('pusher start')
+    log('pusher start')
 
 
 if __name__ == "__main__":
@@ -78,4 +96,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         exit()
     except:
-        print(traceback.format_exc())
+        err_log(traceback.format_exc())
